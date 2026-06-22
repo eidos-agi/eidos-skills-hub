@@ -74,3 +74,17 @@ The skill produces a structured proposal with:
 - Exact shell commands to apply it
 
 Proposals are reviewed and merged via the normal GitHub PR flow.
+
+## Eidos ecosystem orientation
+
+Use the `eidos-ecosystem` skill to orient to the full Eidos AGI architecture before building anything. It maps:
+
+- Four Pillars — Core brain (`eidos-v5`), Helios body, Omni memory, Hancock auth
+- Storemetheus — governed plugin store layer
+- Canon — agent standards and verification gates
+- Architecture decision records in `cockpit-eidos/`
+
+```bash
+npx skills add eidos-agi/eidos-skills-hub
+# then ask your agent to use the eidos-ecosystem skill
+```

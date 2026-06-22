@@ -14,8 +14,10 @@ const INDEX_TTL_MS = 6 * 60 * 60 * 1000 // 6 hours
 
 // ─── Eidos first-party hubs (always searched alongside skills.sh) ─────────────
 const EIDOS_HUBS = [
+  { owner: "eidos-agi", repo: "eidos-skills-hub", tag: "skills-hub" },
   { owner: "eidos-agi", repo: "eidos-contracts-hub", tag: "contracts" },
   { owner: "eidos-agi", repo: "eidos-transcoders-hub", tag: "transcoders" },
+  { owner: "eidos-agi", repo: "eidos-storemetheus", tag: "storemetheus" },
 ]
 
 mkdirSync(CACHE_DIR, { recursive: true })

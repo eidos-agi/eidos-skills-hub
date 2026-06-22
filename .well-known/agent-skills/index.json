@@ -9,6 +9,11 @@
       "name": "improve-skills-hub",
       "path": "skills/improve-skills-hub/SKILL.md",
       "description": "Propose improvements to the Eidos Skills Hub ecosystem — new hubs, new skills, ranking changes, search fixes. Produces a structured proposal with copy-pasteable apply steps."
+    },
+    {
+      "name": "eidos-ecosystem",
+      "path": "skills/eidos-ecosystem/SKILL.md",
+      "description": "Orientation map for the Eidos AGI ecosystem — Four Pillars (Core, Helios, Omni, Hancock), Storemetheus plugin stores, Canon standards, and the skills/contracts/transcoders hubs. Read before building anything inside Eidos."
     }
   ]
 }
