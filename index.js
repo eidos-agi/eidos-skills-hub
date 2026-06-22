@@ -257,7 +257,7 @@ rl.on("line", async (line) => {
       await respond(id, {
         protocolVersion: "2024-11-05",
         capabilities: { tools: {} },
-        serverInfo: { name: "skills-sh", version: "1.0.0" },
+        serverInfo: { name: "eidos-skills-hub", version: "1.0.0" },
       })
     } else if (method === "tools/list") {
       await respond(id, { tools: TOOLS })

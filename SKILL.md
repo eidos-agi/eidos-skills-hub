@@ -1,5 +1,5 @@
 ---
-name: skills-sh
+name: eidos-skills-hub
 description: Search skills.sh in real-time. Use when you need to find, discover, or install agent skills from the skills.sh directory. Searches 20K+ skills by keyword, fetches SKILL.md content from GitHub, and caches locally.
 ---
 
