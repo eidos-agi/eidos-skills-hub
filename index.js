@@ -12,6 +12,12 @@ const INDEX_FILE = join(CACHE_DIR, "index.json")
 const SKILLS_DIR = join(CACHE_DIR, "skills")
 const INDEX_TTL_MS = 6 * 60 * 60 * 1000 // 6 hours
 
+// ─── Eidos first-party hubs (always searched alongside skills.sh) ─────────────
+const EIDOS_HUBS = [
+  { owner: "eidos-agi", repo: "eidos-contracts-hub", tag: "contracts" },
+  { owner: "eidos-agi", repo: "eidos-transcoders-hub", tag: "transcoders" },
+]
+
 mkdirSync(CACHE_DIR, { recursive: true })
 mkdirSync(SKILLS_DIR, { recursive: true })
 
@@ -50,6 +56,14 @@ async function getIndex() {
 
 // ─── Tool implementations ─────────────────────────────────────────────────────
 
+async function fetchEidosHubSkills(hub) {
+  const url = `https://raw.githubusercontent.com/${hub.owner}/${hub.repo}/main/.well-known/agent-skills/index.json`
+  const r = await fetch(url)
+  if (!r.ok) return []
+  const { skills = [] } = await r.json()
+  return skills.map(s => ({ owner: hub.owner, repo: hub.repo, skill: s.name, tag: hub.tag, description: s.description, install: `npx skills add ${hub.owner}/${hub.repo}`, url: `https://github.com/${hub.owner}/${hub.repo}` }))
+}
+
 async function searchSkills({ query, limit = 10, owner_filter }) {
   const index = await getIndex()
   const q = query.toLowerCase()
@@ -66,19 +80,30 @@ async function searchSkills({ query, limit = 10, owner_filter }) {
     return sc
   }
 
-  let results = index
+  // Search eidos first-party hubs in parallel with main index
+  const eidosResults = (await Promise.all(EIDOS_HUBS.map(fetchEidosHubSkills))).flat()
+  const eidosScored = eidosResults
+    .filter(s => !owner_filter || s.owner === owner_filter)
+    .map(s => ({ ...s, _score: score(s) * 1.5 })) // boost eidos first-party
+    .filter(s => s._score > 0)
+
+  const mainScored = index
     .filter(s => !owner_filter || s.owner === owner_filter)
     .map(s => ({ ...s, _score: score(s) }))
     .filter(s => s._score > 0)
+
+  const combined = [...eidosScored, ...mainScored]
     .sort((a, b) => b._score - a._score)
     .slice(0, limit)
 
-  return results.map(s => ({
+  return combined.map(s => ({
     skill: s.skill,
     owner: s.owner,
     repo: s.repo,
-    install: `npx skills add ${s.owner}/${s.repo}`,
+    tag: s.tag ?? "skills.sh",
+    install: s.install ?? `npx skills add ${s.owner}/${s.repo}`,
     url: s.url,
+    ...(s.description ? { description: s.description } : {}),
   }))
 }
 

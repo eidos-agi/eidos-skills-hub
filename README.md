@@ -1,32 +1,60 @@
-# skills-sh
+# eidos-skills-hub
 
-MCP server for searching the [skills.sh](https://skills.sh) agent skills directory in real-time.
+MCP server that searches the [skills.sh](https://skills.sh) agent skills directory plus Eidos first-party hubs in real-time.
 
-20,000+ skills indexed from skills.sh sitemaps. Skill content fetched from GitHub and cached locally.
+One search surface. Three sources.
+
+## Sources
+
+| Hub | What | Install |
+|-----|------|---------|
+| [skills.sh](https://skills.sh) | 20K+ community skills | `npx skills add <owner/repo>` |
+| [eidos-contracts-hub](https://github.com/eidos-agi/eidos-contracts-hub) | Skills as contracts — output schemas, not how-to | `npx skills add eidos-agi/eidos-contracts-hub` |
+| [eidos-transcoders-hub](https://github.com/eidos-agi/eidos-transcoders-hub) | Format transforms — yaml→PDF, doc→MP3 | `npx skills add eidos-agi/eidos-transcoders-hub` |
+
+Eidos first-party results are boosted above skills.sh results at equal relevance.
 
 ## Install
 
 ```bash
-npx skills add eidos-agi/skills-sh
+git clone https://github.com/eidos-agi/eidos-skills-hub.git ~/repos-eidos-agi/eidos-skills-hub
 ```
 
-Or add to `~/.claude/claude_desktop_config.json`:
+Add to `~/.claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
-    "skills-sh": {
+    "eidos-skills-hub": {
       "command": "node",
-      "args": ["/path/to/repos-eidos-agi/skills-sh/index.js"]
+      "args": ["/Users/<you>/repos-eidos-agi/eidos-skills-hub/index.js"]
     }
   }
 }
 ```
 
+Restart Claude Code. Or install the skill to let any agent find and set it up:
+
+```bash
+npx skills add eidos-agi/eidos-skills-hub
+```
+
+## Self-update
+
+```bash
+cd ~/repos-eidos-agi/eidos-skills-hub && git pull
+```
+
+No build step. No dependencies. Plain Node.js ESM.
+
 ## Tools
 
-- `search_skills(query, limit?, owner_filter?)` — keyword search across 20K+ skills
-- `search_skills_parallel(query, limit?)` — parallel: skills.sh + GitHub, deduplicated
-- `get_skill(owner, repo, skill)` — fetch full SKILL.md, cached locally
-- `list_cached_skills()` — show index state and cached files
-- `refresh_index()` — force refresh from sitemaps
+- `search_skills(query, limit?, owner_filter?)` — keyword search across all sources
+- `search_skills_parallel(query, limit?)` — parallel: all sources + GitHub
+- `get_skill(owner, repo, skill)` — fetch SKILL.md, cached locally
+- `list_cached_skills()` — index age and cached files
+- `refresh_index()` — force rebuild from sitemaps
+
+## How it works
+
+skills.sh has no public JSON API — it's server-side rendered. But it publishes sitemaps listing all skills. We parse those into a local index (`~/.cache/skills-sh/index.json`, refreshed every 6h). Eidos hubs are fetched live from GitHub on each search. SKILL.md content is cached on first fetch.
