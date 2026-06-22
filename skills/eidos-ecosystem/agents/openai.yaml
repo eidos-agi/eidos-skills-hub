@@ -1,0 +1,4 @@
+interface:
+  display_name: "Eidos Ecosystem"
+  short_description: "Navigate Eidos pillars, standards, and hubs"
+  default_prompt: "Use $eidos-ecosystem to orient this work to the correct Eidos pillar and repository."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prefer Skill Candidates"
+  short_description: "Rank skills with explicit preference evidence"
+  default_prompt: "Use $prefer-skill-candidates to rank these skills and explain which one deserves preference."

@@ -1,314 +1,241 @@
 #!/usr/bin/env node
-// skills-sh MCP server — search skills.sh in real-time, cache SKILL.md locally
-// Protocol: MCP stdio (JSON-RPC 2.0)
+// Eidos Skills Hub MCP server — stdio JSON-RPC 2.0 transport.
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "fs"
-import { homedir } from "os"
-import { join } from "path"
-import { createInterface } from "readline"
-
-const CACHE_DIR = join(homedir(), ".cache", "skills-sh")
-const INDEX_FILE = join(CACHE_DIR, "index.json")
-const SKILLS_DIR = join(CACHE_DIR, "skills")
-const INDEX_TTL_MS = 6 * 60 * 60 * 1000 // 6 hours
-
-// ─── Eidos first-party hubs (always searched alongside skills.sh) ─────────────
-const EIDOS_HUBS = [
-  { owner: "eidos-agi", repo: "eidos-contracts-hub", tag: "contracts" },
-  { owner: "eidos-agi", repo: "eidos-transcoders-hub", tag: "transcoders" },
-  { owner: "eidos-agi", repo: "eidos-storemetheus", tag: "storemetheus" },
-]
-
-const GH_HEADERS = {
-  "User-Agent": "eidos-skills-hub",
-  ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
-}
-
-// ponytail: SKILL.md TTL is separate from index TTL — skills change less often than the index
-const SKILL_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
-
-mkdirSync(CACHE_DIR, { recursive: true })
-mkdirSync(SKILLS_DIR, { recursive: true })
-
-// ─── Index (parsed from skills.sh sitemaps) ──────────────────────────────────
-
-async function fetchSitemapUrls(url) {
-  const r = await fetch(url)
-  const text = await r.text()
-  const matches = [...text.matchAll(/<loc>(https:\/\/www\.skills\.sh\/([^<]+))<\/loc>/g)]
-  return matches.map(m => {
-    const parts = m[2].split("/")
-    if (parts.length === 3) {
-      return { owner: parts[0], repo: parts[1], skill: parts[2], url: m[1] }
-    }
-    return null
-  }).filter(Boolean)
-}
-
-async function buildIndex() {
-  const [s1, s2] = await Promise.all([
-    fetchSitemapUrls("https://www.skills.sh/sitemap-skills-1.xml"),
-    fetchSitemapUrls("https://www.skills.sh/sitemap-skills-2.xml").catch(() => []),
-  ])
-  const index = [...s1, ...s2]
-  writeFileSync(INDEX_FILE, JSON.stringify({ built: Date.now(), skills: index }))
-  return index
-}
-
-async function getIndex() {
-  if (existsSync(INDEX_FILE)) {
-    const { built, skills } = JSON.parse(readFileSync(INDEX_FILE, "utf8"))
-    if (Date.now() - built < INDEX_TTL_MS) return skills
-  }
-  return buildIndex()
-}
-
-// ─── Tool implementations ─────────────────────────────────────────────────────
-
-async function fetchEidosHubSkills(hub) {
-  const url = `https://raw.githubusercontent.com/${hub.owner}/${hub.repo}/main/.well-known/agent-skills/index.json`
-  const r = await fetch(url, { headers: GH_HEADERS })
-  if (!r.ok) return []
-  const { skills = [] } = await r.json()
-  return skills.map(s => ({ owner: hub.owner, repo: hub.repo, skill: s.name, tag: hub.tag, description: s.description, install: `npx skills add ${hub.owner}/${hub.repo}`, url: `https://github.com/${hub.owner}/${hub.repo}` }))
-}
-
-async function searchSkills({ query, limit = 10, owner_filter }) {
-  const index = await getIndex()
-  const q = query.toLowerCase()
-  const terms = q.split(/\s+/)
-
-  function score(s) {
-    let sc = 0
-    for (const t of terms) {
-      if (s.skill.toLowerCase().includes(t)) sc += 3
-      else if ((s.description ?? "").toLowerCase().includes(t)) sc += 2
-      else if (s.repo.toLowerCase().includes(t)) sc += 1
-      else if (s.owner.toLowerCase().includes(t)) sc += 0.5
-    }
-    return sc
-  }
-
-  // Search eidos first-party hubs in parallel with main index
-  const eidosResults = (await Promise.all(EIDOS_HUBS.map(fetchEidosHubSkills))).flat()
-  const eidosScored = eidosResults
-    .filter(s => !owner_filter || s.owner === owner_filter)
-    .map(s => ({ ...s, _score: score(s) * 1.5 })) // boost eidos first-party
-    .filter(s => s._score > 0)
-
-  const mainScored = index
-    .filter(s => !owner_filter || s.owner === owner_filter)
-    .map(s => ({ ...s, _score: score(s) }))
-    .filter(s => s._score > 0)
-
-  const combined = [...eidosScored, ...mainScored]
-    .sort((a, b) => b._score - a._score)
-    .slice(0, limit)
-
-  return combined.map(s => ({
-    skill: s.skill,
-    owner: s.owner,
-    repo: s.repo,
-    tag: s.tag ?? "skills.sh",
-    install: s.install ?? `npx skills add ${s.owner}/${s.repo}`,
-    url: s.url,
-    ...(s.description ? { description: s.description } : {}),
-  }))
-}
-
-async function getSkill({ owner, repo, skill }) {
-  const cacheKey = `${owner}__${repo}__${skill}.md`
-  const cachePath = join(SKILLS_DIR, cacheKey)
-  const metaPath = cachePath + ".meta"
-
-  if (existsSync(cachePath) && existsSync(metaPath)) {
-    const { fetched } = JSON.parse(readFileSync(metaPath, "utf8"))
-    if (Date.now() - fetched < SKILL_TTL_MS) return readFileSync(cachePath, "utf8")
-  }
-
-  // Try both path patterns used by skill repos
-  const candidates = [
-    `https://raw.githubusercontent.com/${owner}/${repo}/main/skills/${skill}/SKILL.md`,
-    `https://raw.githubusercontent.com/${owner}/${repo}/main/.well-known/agent-skills/${skill}/SKILL.md`,
-    `https://raw.githubusercontent.com/${owner}/${repo}/main/${skill}/SKILL.md`,
-  ]
-
-  for (const url of candidates) {
-    const r = await fetch(url, { headers: GH_HEADERS })
-    if (r.ok) {
-      const text = await r.text()
-      writeFileSync(cachePath, text)
-      writeFileSync(metaPath, JSON.stringify({ fetched: Date.now() }))
-      return text
-    }
-  }
-
-  throw new Error(`SKILL.md not found for ${owner}/${repo}/${skill}`)
-}
-
-async function listCachedSkills() {
-  if (!existsSync(INDEX_FILE)) return { count: 0, index_built: null, cached_skill_mds: [] }
-  const { built, skills } = JSON.parse(readFileSync(INDEX_FILE, "utf8"))
-  const cachedFiles = existsSync(SKILLS_DIR)
-    ? readdirSync(SKILLS_DIR).map(f => f.replace(".md", "").replace(/__/g, " / "))
-    : []
-  return {
-    count: skills.length,
-    index_built: new Date(built).toISOString(),
-    cached_skill_mds: cachedFiles,
-  }
-}
-
-async function refreshIndex() {
-  const skills = await buildIndex()
-  return { refreshed: true, count: skills.length }
-}
-
-// Parallel search across multiple sources
-async function searchParallel({ query, limit = 5 }) {
-  const [skillsShResults, githubResults] = await Promise.allSettled([
-    searchSkills({ query, limit }),
-    searchGitHub(query, limit),
-  ])
-
-  const combined = []
-  const seen = new Set()
-
-  for (const r of skillsShResults.status === "fulfilled" ? skillsShResults.value : []) {
-    const key = `${r.owner}/${r.repo}/${r.skill}`
-    if (!seen.has(key)) { seen.add(key); combined.push({ ...r, source: r.tag ?? "skills.sh" }) }
-  }
-  for (const r of githubResults.status === "fulfilled" ? githubResults.value : []) {
-    const key = `${r.owner}/${r.repo}/${r.skill}`
-    if (!seen.has(key)) { seen.add(key); combined.push({ ...r, source: "github" }) }
-  }
-
-  // Prefer skills.sh listed (curated/vetted), then sort by source
-  return combined
-    .sort((a, b) => (a.source === "skills.sh" ? -1 : 1))
-    .slice(0, limit * 2)
-}
-
-async function searchGitHub(query, limit) {
-  const r = await fetch(
-    `https://api.github.com/search/repositories?q=${encodeURIComponent(query + " agent-skills skill in:name,description")}&sort=stars&per_page=${limit}`,
-    { headers: GH_HEADERS }
-  )
-  if (!r.ok) return []
-  const { items = [] } = await r.json()
-  return items.map(repo => ({
-    skill: query,
-    owner: repo.owner.login,
-    repo: repo.name,
-    install: `npx skills add ${repo.owner.login}/${repo.name}`,
-    url: `https://www.skills.sh/${repo.owner.login}/${repo.name}`,
-    stars: repo.stargazers_count,
-    description: repo.description,
-  }))
-}
-
-// ─── MCP protocol ────────────────────────────────────────────────────────────
+import { createInterface } from "node:readline"
+import {
+  auditCodexSkills,
+  cacheSkill,
+  checkSkillUpdates,
+  getSkill,
+  listCachedSkills,
+  rankSkillCandidates,
+  refreshIndex,
+  searchParallel,
+  searchSkills,
+  syncCodexSkills,
+} from "./lib.mjs"
 
 const TOOLS = [
   {
     name: "search_skills",
-    description: "Search skills.sh for agent skills by keyword. Returns ranked results with install commands.",
+    description: "Search the live Skills.sh API and Eidos first-party catalogs, then return evidence-ranked skills.",
     inputSchema: {
       type: "object",
       properties: {
-        query: { type: "string", description: "Search terms (e.g. 'supabase postgres', 'react nextjs', 'typescript')" },
-        limit: { type: "number", description: "Max results (default 10)", default: 10 },
-        owner_filter: { type: "string", description: "Filter by GitHub org/owner (e.g. 'vercel-labs', 'anthropics')" },
+        query: { type: "string", description: "Capability or outcome to find" },
+        limit: { type: "integer", minimum: 1, maximum: 100, default: 10 },
+        owner_filter: { type: "string", description: "Optional exact GitHub owner filter" },
       },
       required: ["query"],
+      additionalProperties: false,
     },
   },
   {
     name: "search_skills_parallel",
-    description: "Parallel search across skills.sh index AND GitHub — finds skills not yet listed on skills.sh. Deduplicates and prefers curated skills.sh results.",
+    description: "Search Skills.sh, Eidos catalogs, installed/local Codex skills, trusted libraries, and GitHub concurrently with partial-failure reporting.",
     inputSchema: {
       type: "object",
       properties: {
-        query: { type: "string", description: "Search terms" },
-        limit: { type: "number", description: "Max results per source (default 5)", default: 5 },
+        query: { type: "string" },
+        limit: { type: "integer", minimum: 1, maximum: 100, default: 10 },
+        providers: {
+          type: "array",
+          minItems: 1,
+          uniqueItems: true,
+          items: { type: "string", enum: ["skills_sh", "eidos", "local", "trusted_libraries", "github_global"] },
+        },
+        trusted_libraries: { type: "array", maxItems: 12, items: { type: "string" } },
+        preferred_sources: { type: "array", items: { type: "string" } },
+        trusted_sources: { type: "array", items: { type: "string" } },
+        blocked_sources: { type: "array", items: { type: "string" } },
       },
       required: ["query"],
+      additionalProperties: false,
     },
   },
   {
-    name: "get_skill",
-    description: "Fetch a specific skill's SKILL.md content from GitHub. Cached locally after first fetch.",
+    name: "rank_skill_candidates",
+    description: "Rank existing skill candidates by task fit, source preference, trust, evidence, local availability, and adoption.",
     inputSchema: {
       type: "object",
       properties: {
-        owner: { type: "string", description: "GitHub owner (e.g. 'supabase')" },
-        repo: { type: "string", description: "GitHub repo (e.g. 'agent-skills')" },
-        skill: { type: "string", description: "Skill name (e.g. 'supabase-postgres-best-practices')" },
+        query: { type: "string" },
+        limit: { type: "integer", minimum: 1, maximum: 100, default: 10 },
+        candidates: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            properties: {
+              owner: { type: "string" },
+              repo: { type: "string" },
+              skill: { type: "string" },
+              name: { type: "string" },
+              description: { type: "string" },
+              sourceId: { type: "string" },
+              source: { type: "string" },
+              provider: { type: "string" },
+              installs: { type: "number", minimum: 0 },
+              official: { type: "boolean" },
+              trusted: { type: "boolean" },
+              installed: { type: "boolean" },
+              cached: { type: "boolean" },
+              compatible: { type: "boolean" },
+              url: { type: "string" }
+            },
+            additionalProperties: true
+          }
+        },
+        preferred_sources: { type: "array", items: { type: "string" } },
+        trusted_sources: { type: "array", items: { type: "string" } },
+        blocked_sources: { type: "array", items: { type: "string" } }
+      },
+      required: ["query", "candidates"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "get_skill",
+    description: "Fetch a full skill snapshot safely, cache every companion file, and return its SKILL.md.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        owner: { type: "string" },
+        repo: { type: "string" },
+        skill: { type: "string" },
+        refresh: { type: "boolean", default: false },
       },
       required: ["owner", "repo", "skill"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "cache_skill",
+    description: "Cache a skill's complete Skills.sh or GitHub snapshot in the git-backed provenance repository.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        owner: { type: "string" },
+        repo: { type: "string" },
+        skill: { type: "string" },
+        refresh: { type: "boolean", default: false },
+      },
+      required: ["owner", "repo", "skill"],
+      additionalProperties: false,
     },
   },
   {
     name: "list_cached_skills",
-    description: "List the current state of the local skills cache — index size, age, and downloaded SKILL.md files.",
-    inputSchema: { type: "object", properties: {} },
+    description: "List cached snapshots, hashes, provenance, desired Codex state, and cache git commit.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "refresh_index",
-    description: "Force refresh the skills.sh index from sitemaps (normally auto-refreshes every 6 hours).",
-    inputSchema: { type: "object", properties: {} },
+    description: "Refresh the sitemap fallback index. Live searches use the Skills.sh JSON API first.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "check_skill_updates",
+    description: "Compare desired or cached skill snapshots with current upstream content hashes without installing changes.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "audit_codex_skills",
+    description: "Compare desired cached hashes with skills installed for Codex and report missing or drifted skills.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "sync_codex_skills",
+    description: "After explicit confirmation, refresh selected snapshots and install them for Codex through the official npx skills CLI.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        skills: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            properties: {
+              owner: { type: "string" },
+              repo: { type: "string" },
+              skill: { type: "string" },
+            },
+            required: ["owner", "repo", "skill"],
+            additionalProperties: false,
+          },
+        },
+        global: { type: "boolean", default: true },
+        confirm: { type: "boolean", description: "Must be true because this changes installed Codex skills" },
+      },
+      required: ["skills", "confirm"],
+      additionalProperties: false,
+    },
   },
 ]
 
-async function callTool(name, args) {
+export async function callTool(name, args = {}) {
   switch (name) {
     case "search_skills": return searchSkills(args)
     case "search_skills_parallel": return searchParallel(args)
+    case "rank_skill_candidates": return rankSkillCandidates(args)
     case "get_skill": return getSkill(args)
+    case "cache_skill": return cacheSkill(args)
     case "list_cached_skills": return listCachedSkills()
     case "refresh_index": return refreshIndex()
+    case "check_skill_updates": return checkSkillUpdates()
+    case "audit_codex_skills": return auditCodexSkills()
+    case "sync_codex_skills": return syncCodexSkills(args)
     default: throw new Error(`Unknown tool: ${name}`)
   }
 }
 
-// ─── stdio MCP transport ──────────────────────────────────────────────────────
-
-const rl = createInterface({ input: process.stdin, terminal: false })
-
-async function respond(id, result) {
+function respond(id, result) {
   process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id, result }) + "\n")
 }
 
-async function respondError(id, code, message) {
+function respondError(id, code, message) {
   process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id, error: { code, message } }) + "\n")
 }
 
-rl.on("line", async (line) => {
-  let msg
-  try { msg = JSON.parse(line) } catch { return }
-
-  const { id, method, params } = msg
-
-  try {
-    if (method === "initialize") {
-      await respond(id, {
-        protocolVersion: "2024-11-05",
-        capabilities: { tools: {} },
-        serverInfo: { name: "eidos-skills-hub", version: "1.0.0" },
-      })
-    } else if (method === "tools/list") {
-      await respond(id, { tools: TOOLS })
-    } else if (method === "tools/call") {
-      const result = await callTool(params.name, params.arguments ?? {})
-      await respond(id, {
-        content: [{ type: "text", text: typeof result === "string" ? result : JSON.stringify(result, null, 2) }],
-      })
-    } else if (method === "notifications/initialized") {
-      // no-op
-    } else {
-      await respondError(id, -32601, `Method not found: ${method}`)
+export function startServer() {
+  const rl = createInterface({ input: process.stdin, terminal: false })
+  rl.on("line", async line => {
+    let msg
+    try { msg = JSON.parse(line) } catch { return }
+    const { id, method, params } = msg
+    try {
+      if (method === "initialize") {
+        respond(id, {
+          protocolVersion: params?.protocolVersion ?? "2024-11-05",
+          capabilities: { tools: { listChanged: false } },
+          serverInfo: { name: "eidos-skills-hub", version: "1.1.1" },
+        })
+      } else if (method === "tools/list") {
+        respond(id, { tools: TOOLS })
+      } else if (method === "tools/call") {
+        try {
+          const result = await callTool(params?.name, params?.arguments ?? {})
+          const text = typeof result === "string" ? result : JSON.stringify(result, null, 2)
+          respond(id, {
+            content: [{ type: "text", text }],
+            ...(typeof result === "object" && result !== null ? { structuredContent: result } : {}),
+          })
+        } catch (error) {
+          respond(id, { content: [{ type: "text", text: error.message }], isError: true })
+        }
+      } else if (method === "ping") {
+        respond(id, {})
+      } else if (method === "notifications/initialized" || method === "notifications/cancelled") {
+        // Notifications do not receive a response.
+      } else if (id !== undefined) {
+        respondError(id, -32601, `Method not found: ${method}`)
+      }
+    } catch (error) {
+      respondError(id ?? null, -32603, error.message)
     }
-  } catch (err) {
-    await respondError(id, -32000, err.message)
-  }
-})
+  })
+}
+
+if (process.argv[1] && new URL(import.meta.url).pathname === new URL(`file://${process.argv[1]}`).pathname) {
+  startServer()
+}

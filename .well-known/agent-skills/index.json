@@ -1,19 +1,47 @@
 {
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
   "skills": [
     {
+      "name": "eidos-ecosystem",
+      "type": "skill-md",
+      "description": "Orientation map for the Eidos AGI pillars, standards, plugin stores, and skill hubs.",
+      "url": "https://raw.githubusercontent.com/eidos-agi/eidos-skills-hub/main/skills/eidos-ecosystem/SKILL.md",
+      "digest": "sha256:d35299efe55d97e912eb130776184563e31e16d8bf7ec0cf7b51e23ae0b3b818"
+    },
+    {
       "name": "eidos-skills-hub",
-      "path": "skills/eidos-skills-hub/SKILL.md",
-      "description": "Install and self-update the Eidos Skills Hub MCP server — real-time search across 20K+ skills.sh agent skills plus Eidos first-party hubs"
+      "type": "skill-md",
+      "description": "Search, inspect, cache, rank, install, and update skills across live, local, trusted, and Eidos sources.",
+      "url": "https://raw.githubusercontent.com/eidos-agi/eidos-skills-hub/main/skills/eidos-skills-hub/SKILL.md",
+      "digest": "sha256:75b33fa60498799212957193ce4ef7e7bfb41d060d43ef1eee5aae97394bb2dd"
     },
     {
       "name": "improve-skills-hub",
-      "path": "skills/improve-skills-hub/SKILL.md",
-      "description": "Propose improvements to the Eidos Skills Hub ecosystem — new hubs, new skills, ranking changes, search fixes. Produces a structured proposal with copy-pasteable apply steps."
+      "type": "skill-md",
+      "description": "Propose evidence-backed, testable improvements to the Eidos Skills Hub ecosystem.",
+      "url": "https://raw.githubusercontent.com/eidos-agi/eidos-skills-hub/main/skills/improve-skills-hub/SKILL.md",
+      "digest": "sha256:a13c73edc053ff809a7370da8e72d9eb55f97abc6de793a693acfb4059eb0a74"
     },
     {
-      "name": "eidos-ecosystem",
-      "path": "skills/eidos-ecosystem/SKILL.md",
-      "description": "Orientation map for the Eidos AGI ecosystem — Four Pillars (Core, Helios, Omni, Hancock), Storemetheus plugin stores, Canon standards, and the skills/contracts/transcoders hubs. Read before building anything inside Eidos."
+      "name": "maintain-codex-skills",
+      "type": "skill-md",
+      "description": "Audit and reconcile installed Codex skills against approved provenance-tracked snapshots.",
+      "url": "https://raw.githubusercontent.com/eidos-agi/eidos-skills-hub/main/skills/maintain-codex-skills/SKILL.md",
+      "digest": "sha256:8b09b3c768a0e82eed4e84106c41c78ffaea72d047e437e25dbb934e18b111cb"
+    },
+    {
+      "name": "parallel-search-skill-libraries",
+      "type": "skill-md",
+      "description": "Search Skills.sh, Eidos, installed/local skills, trusted libraries, and GitHub concurrently.",
+      "url": "https://raw.githubusercontent.com/eidos-agi/eidos-skills-hub/main/skills/parallel-search-skill-libraries/SKILL.md",
+      "digest": "sha256:159b6be399786e6e18348cfc175a1d20326e45d3e16a6ca52f466b75b205a227"
+    },
+    {
+      "name": "prefer-skill-candidates",
+      "type": "skill-md",
+      "description": "Rank skill candidates with explicit preferences, trust, blocking, evidence, and availability.",
+      "url": "https://raw.githubusercontent.com/eidos-agi/eidos-skills-hub/main/skills/prefer-skill-candidates/SKILL.md",
+      "digest": "sha256:8bb0bc0c00de241793ddcd9e730e9c510ae6f5383372ffd68a942f326e491811"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "name": "eidos-skills-hub",
-  "version": "1.0.0",
-  "description": "Real-time search across 20K+ agent skills from skills.sh plus Eidos first-party hubs (contracts, transcoders, Storemetheus).",
+  "version": "1.1.1+codex.20260622190738",
+  "description": "Discover, rank, cache, install, and update Codex skills across live, local, trusted, and Eidos sources.",
   "author": {
     "name": "Eidos AGI",
     "email": "hello@eidosagi.com",
@@ -22,25 +22,32 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Eidos Skills Hub",
-    "shortDescription": "Search 20K+ agent skills and the Eidos ecosystem.",
-    "longDescription": "Eidos Skills Hub is the search layer for the Eidos agent skills ecosystem. It indexes skills.sh (20K+ community skills) and all Eidos first-party hubs — contracts, transcoders, and Storemetheus plugin stores — and serves them through a single search surface. Use it to find, read, and install agent skills from any source.",
+    "shortDescription": "Find the right agent skill\u2014and keep it trusted.",
+    "longDescription": "Search Skills.sh, Eidos catalogs, installed Codex skills, trusted libraries, and GitHub in parallel. Compare candidates with explainable source-aware ranking, inspect complete git-backed snapshots, and keep Codex skills current without surrendering control.",
     "developerName": "Eidos AGI",
     "category": "Developer Tools",
     "capabilities": [
       "Skill Search",
+      "Parallel Multi-library Search",
+      "Preference-aware Ranking",
+      "Installed Skill Discovery",
       "Agent Skills Registry",
       "MCP Server",
       "skills.sh Integration",
-      "Eidos Ecosystem"
+      "Eidos Ecosystem",
+      "Codex Skill Updates",
+      "Git-backed Snapshot Cache"
     ],
     "websiteURL": "https://github.com/eidos-agi/eidos-skills-hub",
     "privacyPolicyURL": "https://github.com/eidos-agi/eidos-skills-hub",
     "termsOfServiceURL": "https://github.com/eidos-agi/eidos-skills-hub",
     "defaultPrompt": [
-      "Search for skills related to my current task.",
-      "Find the best skill for working with Supabase.",
-      "Show me what Eidos ecosystem skills are available."
+      "Find the best current skill for this task.",
+      "Search every configured skill library in parallel.",
+      "Audit my installed Codex skills for drift."
     ],
-    "brandColor": "#4F46E5"
+    "brandColor": "#4F46E5",
+    "composerIcon": "./assets/plugin-icon.svg",
+    "logo": "./assets/plugin-logo.svg"
   }
 }

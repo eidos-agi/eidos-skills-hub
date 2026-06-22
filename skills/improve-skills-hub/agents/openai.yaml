@@ -1,0 +1,4 @@
+interface:
+  display_name: "Improve Skills Hub"
+  short_description: "Propose testable Skills Hub improvements"
+  default_prompt: "Use $improve-skills-hub to propose one evidence-backed improvement for this observed failure."

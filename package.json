@@ -1,1 +1,10 @@
-{"name":"skills-sh-mcp","version":"1.0.0","type":"module"}
+{
+  "name": "eidos-skills-hub",
+  "version": "1.1.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check index.js && node --check lib.mjs && node --test"
+  }
+}

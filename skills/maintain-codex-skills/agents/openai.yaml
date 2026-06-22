@@ -1,0 +1,4 @@
+interface:
+  display_name: "Maintain Codex Skills"
+  short_description: "Audit and update Codex skills safely"
+  default_prompt: "Use $maintain-codex-skills to check my installed Codex skills for drift and approved updates."

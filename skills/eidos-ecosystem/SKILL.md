@@ -25,7 +25,7 @@ Storemetheus is the governed distribution system for AI operating capability. It
 - **Repo**: `eidos-agi/eidos-storemetheus`
 - **What it builds**: marketplace repo with `.agents/plugins/marketplace.json`, scoped plugin bundles, governance model (owner, review cadence, private/public boundary, install proof)
 - **Skill**: `build-plugin-stores` in `eidos-storemetheus/skills/build-plugin-stores/SKILL.md`
-- **Install**: `npx skills add eidos-agi/eidos-storemetheus` *(once `.well-known/agent-skills/index.json` is added)*
+- **Install**: `npx skills add eidos-agi/eidos-storemetheus`
 
 Use Storemetheus when: a company/team/client wants a private plugin store, a plugin needs review gates, or you need to separate plugin source / store / cache / runtime visibility.
 
@@ -42,7 +42,7 @@ Canon owns agent operating rules, repo contracts, and verification gates. It ans
 
 | Hub | What | Search |
 |-----|------|--------|
-| **eidos-skills-hub** | Search surface — 20K+ skills.sh + all eidos hubs | `mcp__eidos-skills-hub__search_skills` |
+| **eidos-skills-hub** | Search, snapshot, ranking, and Codex skill maintenance | `mcp__eidos-skills-hub__search_skills` |
 | **eidos-contracts-hub** | Skills as contracts (output schemas) | `npx skills add eidos-agi/eidos-contracts-hub` |
 | **eidos-transcoders-hub** | Format transforms (yaml→PDF, doc→MP3) | `npx skills add eidos-agi/eidos-transcoders-hub` |
 

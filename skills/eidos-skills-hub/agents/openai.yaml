@@ -1,0 +1,4 @@
+interface:
+  display_name: "Eidos Skills Hub"
+  short_description: "Search and inspect agent skill catalogs"
+  default_prompt: "Use $eidos-skills-hub to find and inspect the best skill for this task."

@@ -2,7 +2,7 @@
   "mcpServers": {
     "eidos-skills-hub": {
       "command": "node",
-      "args": ["./index.js"],
+      "args": ["${CLAUDE_PLUGIN_ROOT}/index.js"],
       "env": {}
     }
   }

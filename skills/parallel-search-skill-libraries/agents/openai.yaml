@@ -1,0 +1,4 @@
+interface:
+  display_name: "Parallel Skill Search"
+  short_description: "Search multiple skill libraries in parallel"
+  default_prompt: "Use $parallel-search-skill-libraries to search every configured skill library for this capability."

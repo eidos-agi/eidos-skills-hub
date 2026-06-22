@@ -18,6 +18,8 @@ description: Contract for proposing improvements to the Eidos Skills Hub ecosyst
     "observed_failure must describe a real search or use case that didn't work",
     "New hubs require at least 2 concrete skills ready to populate them",
     "Ranking changes must include a before/after example showing improvement",
+    "Runtime changes must add or update deterministic tests",
+    "Changes affecting installation or updates must include rollback steps",
     "self_update steps must be copy-pasteable — no placeholders"
   ],
   "required": ["observed_failure", "proposal_type", "proposal", "self_update"],
