@@ -10,8 +10,9 @@ test("Codex MCP launcher uses the installed plugin root", () => {
   const config = JSON.parse(readFileSync(new URL("../.mcp.json", import.meta.url), "utf8"))
   const server = config.mcpServers["eidos-skills-hub"]
   assert.equal(server.transport, "stdio")
-  assert.deepEqual(server.args, ["${PLUGIN_ROOT}/index.js"])
-  assert.ok(!JSON.stringify(config).includes("CLAUDE_PLUGIN_ROOT"))
+  assert.deepEqual(server.args, ["index.js"])
+  assert.equal(server.cwd, ".")
+  assert.ok(!JSON.stringify(config).includes("PLUGIN_ROOT"))
 })
 
 test("Eidos exact match outranks popular community noise", () => {
