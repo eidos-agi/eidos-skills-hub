@@ -58,3 +58,19 @@ No build step. No dependencies. Plain Node.js ESM.
 ## How it works
 
 skills.sh has no public JSON API — it's server-side rendered. But it publishes sitemaps listing all skills. We parse those into a local index (`~/.cache/skills-sh/index.json`, refreshed every 6h). Eidos hubs are fetched live from GitHub on each search. SKILL.md content is cached on first fetch.
+
+## Contributing / proposing changes
+
+Use the `improve-skills-hub` skill to propose changes to any hub in this ecosystem — new hubs, new skills, ranking adjustments, or search fixes.
+
+```bash
+npx skills add eidos-agi/eidos-skills-hub
+# then ask your agent to use the improve-skills-hub skill
+```
+
+The skill produces a structured proposal with:
+- The observed failure that motivated it
+- What to change and why
+- Exact shell commands to apply it
+
+Proposals are reviewed and merged via the normal GitHub PR flow.

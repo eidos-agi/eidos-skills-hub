@@ -3,7 +3,12 @@
     {
       "name": "eidos-skills-hub",
       "path": "skills/eidos-skills-hub/SKILL.md",
-      "description": "Install and self-update the Eidos Skills Hub MCP server — real-time search across 20K+ skills.sh agent skills"
+      "description": "Install and self-update the Eidos Skills Hub MCP server — real-time search across 20K+ skills.sh agent skills plus Eidos first-party hubs"
+    },
+    {
+      "name": "improve-skills-hub",
+      "path": "skills/improve-skills-hub/SKILL.md",
+      "description": "Propose improvements to the Eidos Skills Hub ecosystem — new hubs, new skills, ranking changes, search fixes. Produces a structured proposal with copy-pasteable apply steps."
     }
   ]
 }
