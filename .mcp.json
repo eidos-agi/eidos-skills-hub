@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "eidos-skills-hub": {
+      "command": "node",
+      "args": ["./index.js"],
+      "env": {}
+    }
+  }
+}

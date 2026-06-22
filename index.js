@@ -14,11 +14,18 @@ const INDEX_TTL_MS = 6 * 60 * 60 * 1000 // 6 hours
 
 // ─── Eidos first-party hubs (always searched alongside skills.sh) ─────────────
 const EIDOS_HUBS = [
-  { owner: "eidos-agi", repo: "eidos-skills-hub", tag: "skills-hub" },
   { owner: "eidos-agi", repo: "eidos-contracts-hub", tag: "contracts" },
   { owner: "eidos-agi", repo: "eidos-transcoders-hub", tag: "transcoders" },
   { owner: "eidos-agi", repo: "eidos-storemetheus", tag: "storemetheus" },
 ]
+
+const GH_HEADERS = {
+  "User-Agent": "eidos-skills-hub",
+  ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
+}
+
+// ponytail: SKILL.md TTL is separate from index TTL — skills change less often than the index
+const SKILL_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 mkdirSync(CACHE_DIR, { recursive: true })
 mkdirSync(SKILLS_DIR, { recursive: true })
@@ -60,7 +67,7 @@ async function getIndex() {
 
 async function fetchEidosHubSkills(hub) {
   const url = `https://raw.githubusercontent.com/${hub.owner}/${hub.repo}/main/.well-known/agent-skills/index.json`
-  const r = await fetch(url)
+  const r = await fetch(url, { headers: GH_HEADERS })
   if (!r.ok) return []
   const { skills = [] } = await r.json()
   return skills.map(s => ({ owner: hub.owner, repo: hub.repo, skill: s.name, tag: hub.tag, description: s.description, install: `npx skills add ${hub.owner}/${hub.repo}`, url: `https://github.com/${hub.owner}/${hub.repo}` }))
@@ -72,12 +79,12 @@ async function searchSkills({ query, limit = 10, owner_filter }) {
   const terms = q.split(/\s+/)
 
   function score(s) {
-    const haystack = `${s.skill} ${s.owner} ${s.repo}`.toLowerCase()
     let sc = 0
     for (const t of terms) {
       if (s.skill.toLowerCase().includes(t)) sc += 3
-      else if (s.owner.toLowerCase().includes(t)) sc += 2
+      else if ((s.description ?? "").toLowerCase().includes(t)) sc += 2
       else if (s.repo.toLowerCase().includes(t)) sc += 1
+      else if (s.owner.toLowerCase().includes(t)) sc += 0.5
     }
     return sc
   }
@@ -112,9 +119,11 @@ async function searchSkills({ query, limit = 10, owner_filter }) {
 async function getSkill({ owner, repo, skill }) {
   const cacheKey = `${owner}__${repo}__${skill}.md`
   const cachePath = join(SKILLS_DIR, cacheKey)
+  const metaPath = cachePath + ".meta"
 
-  if (existsSync(cachePath)) {
-    return readFileSync(cachePath, "utf8")
+  if (existsSync(cachePath) && existsSync(metaPath)) {
+    const { fetched } = JSON.parse(readFileSync(metaPath, "utf8"))
+    if (Date.now() - fetched < SKILL_TTL_MS) return readFileSync(cachePath, "utf8")
   }
 
   // Try both path patterns used by skill repos
@@ -125,10 +134,11 @@ async function getSkill({ owner, repo, skill }) {
   ]
 
   for (const url of candidates) {
-    const r = await fetch(url)
+    const r = await fetch(url, { headers: GH_HEADERS })
     if (r.ok) {
       const text = await r.text()
       writeFileSync(cachePath, text)
+      writeFileSync(metaPath, JSON.stringify({ fetched: Date.now() }))
       return text
     }
   }
@@ -166,7 +176,7 @@ async function searchParallel({ query, limit = 5 }) {
 
   for (const r of skillsShResults.status === "fulfilled" ? skillsShResults.value : []) {
     const key = `${r.owner}/${r.repo}/${r.skill}`
-    if (!seen.has(key)) { seen.add(key); combined.push({ ...r, source: "skills.sh" }) }
+    if (!seen.has(key)) { seen.add(key); combined.push({ ...r, source: r.tag ?? "skills.sh" }) }
   }
   for (const r of githubResults.status === "fulfilled" ? githubResults.value : []) {
     const key = `${r.owner}/${r.repo}/${r.skill}`
@@ -182,7 +192,7 @@ async function searchParallel({ query, limit = 5 }) {
 async function searchGitHub(query, limit) {
   const r = await fetch(
     `https://api.github.com/search/repositories?q=${encodeURIComponent(query + " agent-skills skill in:name,description")}&sort=stars&per_page=${limit}`,
-    { headers: { "User-Agent": "skills-sh-mcp" } }
+    { headers: GH_HEADERS }
   )
   if (!r.ok) return []
   const { items = [] } = await r.json()

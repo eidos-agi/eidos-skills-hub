@@ -1,0 +1,46 @@
+{
+  "name": "eidos-skills-hub",
+  "version": "1.0.0",
+  "description": "Real-time search across 20K+ agent skills from skills.sh plus Eidos first-party hubs (contracts, transcoders, Storemetheus).",
+  "author": {
+    "name": "Eidos AGI",
+    "email": "hello@eidosagi.com",
+    "url": "https://github.com/eidos-agi"
+  },
+  "homepage": "https://github.com/eidos-agi/eidos-skills-hub",
+  "repository": "https://github.com/eidos-agi/eidos-skills-hub",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "agent-skills",
+    "codex",
+    "mcp",
+    "search",
+    "registry"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Eidos Skills Hub",
+    "shortDescription": "Search 20K+ agent skills and the Eidos ecosystem.",
+    "longDescription": "Eidos Skills Hub is the search layer for the Eidos agent skills ecosystem. It indexes skills.sh (20K+ community skills) and all Eidos first-party hubs — contracts, transcoders, and Storemetheus plugin stores — and serves them through a single search surface. Use it to find, read, and install agent skills from any source.",
+    "developerName": "Eidos AGI",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Skill Search",
+      "Agent Skills Registry",
+      "MCP Server",
+      "skills.sh Integration",
+      "Eidos Ecosystem"
+    ],
+    "websiteURL": "https://github.com/eidos-agi/eidos-skills-hub",
+    "privacyPolicyURL": "https://github.com/eidos-agi/eidos-skills-hub",
+    "termsOfServiceURL": "https://github.com/eidos-agi/eidos-skills-hub",
+    "defaultPrompt": [
+      "Search for skills related to my current task.",
+      "Find the best skill for working with Supabase.",
+      "Show me what Eidos ecosystem skills are available."
+    ],
+    "brandColor": "#4F46E5"
+  }
+}
