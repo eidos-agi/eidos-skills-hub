@@ -12,14 +12,35 @@ The governed search and maintenance layer for agent skills across the live [Skil
 
 ## Install for Codex
 
-Install the Eidos marketplace, then the plugin:
+Install directly from the public Eidos marketplace, then install the plugin:
 
 ```bash
-codex plugin marketplace add ~/repos-eidos-agi/eidos-marketplace
+codex plugin marketplace add eidos-agi/eidos-marketplace
 codex plugin add eidos-skills-hub@eidos-agi
 ```
 
 The plugin activates all bundled skills and the MCP server. Start a new Codex thread after installation or update.
+
+Verify that Codex sees the installed plugin:
+
+```bash
+codex plugin list
+```
+
+Look for `eidos-skills-hub@eidos-agi` with status `installed, enabled`.
+
+## Update for Codex
+
+Refresh the remote marketplace snapshot and reinstall the current plugin package:
+
+```bash
+codex plugin marketplace upgrade eidos-agi
+codex plugin add eidos-skills-hub@eidos-agi
+```
+
+Start a new Codex thread after updating so the refreshed skills and MCP tools are loaded.
+
+If the plugin is missing, confirm that `codex plugin list` contains a marketplace named `eidos-agi`, then rerun the two install commands above.
 
 To install only the standalone skills:
 
