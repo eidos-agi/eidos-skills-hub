@@ -1,10 +1,18 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { internals, rankCandidates, rankSkillCandidates, searchLocalSkills } from "../lib.mjs"
+
+test("Codex MCP launcher uses the installed plugin root", () => {
+  const config = JSON.parse(readFileSync(new URL("../.mcp.json", import.meta.url), "utf8"))
+  const server = config.mcpServers["eidos-skills-hub"]
+  assert.equal(server.transport, "stdio")
+  assert.deepEqual(server.args, ["${PLUGIN_ROOT}/index.js"])
+  assert.ok(!JSON.stringify(config).includes("CLAUDE_PLUGIN_ROOT"))
+})
 
 test("Eidos exact match outranks popular community noise", () => {
   const results = rankCandidates([

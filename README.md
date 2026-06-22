@@ -21,6 +21,8 @@ codex plugin add eidos-skills-hub@eidos-agi
 
 The plugin activates all bundled skills and the MCP server. Start a new Codex thread after installation or update.
 
+The stdio MCP launcher resolves `index.js` through Codex's `PLUGIN_ROOT`, so the installed cache location can change without hard-coded machine paths.
+
 Verify that Codex sees the installed plugin:
 
 ```bash
