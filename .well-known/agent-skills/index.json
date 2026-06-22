@@ -1,0 +1,9 @@
+{
+  "skills": [
+    {
+      "name": "eidos-skills-hub",
+      "path": "skills/eidos-skills-hub/SKILL.md",
+      "description": "Install and self-update the Eidos Skills Hub MCP server — real-time search across 20K+ skills.sh agent skills"
+    }
+  ]
+}
