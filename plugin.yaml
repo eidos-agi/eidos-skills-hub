@@ -1,0 +1,16 @@
+slug: eidos-skills-hub
+alias: eidos-skills-hub
+version: 1.0.0
+description: Search skills.sh and first-party Eidos skill hubs so agents can find, read, and install the right skill before doing work.
+kind: tool
+entrypoint: playbook.md
+tags:
+  - eidos
+  - skills
+  - codex
+  - discovery
+  - routing
+faculty:
+  role: skill discovery faculty
+  invoke_as: eidos-skills-hub
+  handoff: identify the relevant Codex or Eidos skill, source path, and usage rule before implementation
